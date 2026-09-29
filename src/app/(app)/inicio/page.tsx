@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CirclePlus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { ComingSoon, PageHeader } from "@/components/page-header";
+import { ReferenceRanges } from "@/components/reference-ranges";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,14 @@ export default async function InicioPage() {
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold">Últimas medições</h2>
         <ComingSoon phase={4}>Aqui vão aparecer suas medições mais recentes.</ComingSoon>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="mb-1 text-lg font-semibold">Como ler seus valores</h2>
+        <p className="mb-3 text-base text-muted-foreground">
+          O que é considerado normal depende do momento da medição.
+        </p>
+        <ReferenceRanges />
       </section>
     </>
   );

@@ -12,7 +12,7 @@ Next.js 16 (App Router, `src/`), TypeScript, Tailwind 4, shadcn/ui (estilo base-
 
 ## Comandos
 - `npm run dev`: servidor local em http://localhost:3000
-- `npm run typecheck`, `npm run lint`, `npm run build`
+- `npm run typecheck`, `npm run lint`, `npm test` (Vitest), `npm run build`
 
 ## Rede corporativa
 A rede usa um certificado próprio. O Node só acessa a internet com `--use-system-ca`: o script `dev` já inclui a opção, e em comandos avulsos use `NODE_OPTIONS=--use-system-ca` (ex.: `npx shadcn`).
@@ -31,3 +31,9 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - Ações de login, cadastro, senha e logout ficam em `src/app/(auth)/actions.ts`. Os links enviados por e-mail caem em `src/app/auth/confirm/route.ts`.
 - Schema do banco: arquivos em `supabase/migrations/`. Sem CLI: a pessoa aplica cada arquivo colando no SQL Editor do Supabase. **Todo arquivo novo de migração precisa ser informado a ela com instruções.**
 - Toda tabela tem RLS (`user_id = auth.uid()`). Colunas em português, conforme o PROJETO.md §8.
+
+## Regras de glicemia
+- `src/lib/glucose/ranges.ts` (faixas, contextos, limites) e `classify.ts` (classificação) são a **única fonte** dessas regras: nunca repita números de faixa em componentes.
+- Os limites de segurança (<54, <70, ≥250) têm prioridade sobre qualquer faixa, inclusive as personalizadas.
+- Qualquer mudança nessas regras exige atualizar `classify.test.ts`.
+- Para exibir: `GlucoseBadge` e `TOM_CLASSES` (`src/components/glucose-badge.tsx`).
