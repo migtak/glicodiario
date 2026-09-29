@@ -1,5 +1,6 @@
 import { TOM_CLASSES } from "@/components/glucose-badge";
 import {
+  CONTEXTOS,
   CONTEXTO_LABEL,
   CONTEXTOS_OFICIAIS,
   LIMITES_SEGURANCA,
@@ -9,27 +10,36 @@ import {
 } from "@/lib/glucose/ranges";
 import { cn } from "@/lib/utils";
 
-/** Agrupa contextos com a mesma faixa para a tabela ficar curta. */
-function agrupar(faixas: Record<Contexto, Faixa>) {
-  const grupos: { contextos: Contexto[]; faixa: Faixa }[] = [];
-  for (const [contexto, faixa] of Object.entries(faixas) as [Contexto, Faixa][]) {
+type Grupo = { contextos: Contexto[]; faixa: Faixa; oficial: boolean };
+
+/**
+ * Agrupa contextos com a mesma faixa para a tabela ficar curta. Oficiais e
+ * aproximados nunca se misturam (o asterisco não pode marcar um critério oficial).
+ * Oficiais vêm primeiro.
+ */
+function agrupar(faixas: Record<Contexto, Faixa>): Grupo[] {
+  const grupos: Grupo[] = [];
+  for (const contexto of CONTEXTOS) {
+    const faixa = faixas[contexto];
+    const oficial = CONTEXTOS_OFICIAIS.includes(contexto);
     const igual = grupos.find(
       (g) =>
+        g.oficial === oficial &&
         g.faixa.normalMin === faixa.normalMin &&
         g.faixa.normalMax === faixa.normalMax &&
         g.faixa.atencaoMax === faixa.atencaoMax,
     );
     if (igual) igual.contextos.push(contexto);
-    else grupos.push({ contextos: [contexto], faixa });
+    else grupos.push({ contextos: [contexto], faixa, oficial });
   }
-  return grupos;
+  return grupos.sort((a, b) => Number(b.oficial) - Number(a.oficial));
 }
 
 /** Tabela educativa "Como ler seus valores" (PROJETO.md §5). */
 export function ReferenceRanges({ faixas = resolverFaixas() }: { faixas?: Record<Contexto, Faixa> }) {
   const grupos = agrupar(faixas);
-  const aproximado = (cs: Contexto[]) => cs.some((c) => !CONTEXTOS_OFICIAIS.includes(c));
   const th = "px-3 py-2 text-left text-sm font-semibold";
+  const num = "px-3 py-2 whitespace-nowrap tabular-nums";
 
   return (
     <div>
@@ -45,19 +55,19 @@ export function ReferenceRanges({ faixas = resolverFaixas() }: { faixas?: Record
             </tr>
           </thead>
           <tbody>
-            {grupos.map(({ contextos, faixa }) => (
+            {grupos.map(({ contextos, faixa, oficial }) => (
               <tr key={contextos.join()} className="border-t">
                 <th scope="row" className="px-3 py-2 text-left font-medium">
                   {contextos.map((c) => CONTEXTO_LABEL[c]).join(", ")}
-                  {aproximado(contextos) && <span aria-label=" (valor aproximado)">*</span>}
+                  {!oficial && <span aria-label=" (valor aproximado)">*</span>}
                 </th>
-                <td className="px-3 py-2 tabular-nums">
+                <td className={num}>
                   {faixa.normalMin}–{faixa.normalMax}
                 </td>
-                <td className="px-3 py-2 tabular-nums">
+                <td className={num}>
                   {faixa.normalMax + 1}–{faixa.atencaoMax}
                 </td>
-                <td className="px-3 py-2 tabular-nums">≥ {faixa.atencaoMax + 1}</td>
+                <td className={num}>≥&nbsp;{faixa.atencaoMax + 1}</td>
               </tr>
             ))}
           </tbody>
