@@ -25,3 +25,9 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - Cores de classificação: tokens `glu-normal`, `glu-attention`, `glu-high` e `glu-low` (ex.: `text-glu-high`).
 - Linguagem: nunca diagnosticar. Dizer "acima da faixa de referência", nunca "você tem diabetes".
 - Páginas logadas ficam em `src/app/(app)/`, com a navegação em `src/components/app-nav.tsx`.
+
+## Autenticação e banco
+- Supabase: clientes em `src/lib/supabase/` (`client.ts` para o navegador, `server.ts` para o servidor). O `src/proxy.ts` renova a sessão e redireciona para `/login` quem não está logado.
+- Ações de login, cadastro, senha e logout ficam em `src/app/(auth)/actions.ts`. Os links enviados por e-mail caem em `src/app/auth/confirm/route.ts`.
+- Schema do banco: arquivos em `supabase/migrations/`. Sem CLI: a pessoa aplica cada arquivo colando no SQL Editor do Supabase. **Todo arquivo novo de migração precisa ser informado a ela com instruções.**
+- Toda tabela tem RLS (`user_id = auth.uid()`). Colunas em português, conforme o PROJETO.md §8.

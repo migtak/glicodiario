@@ -3,14 +3,22 @@ import Link from "next/link";
 import { CirclePlus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { ComingSoon, PageHeader } from "@/components/page-header";
+import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Início" };
 
-export default function InicioPage() {
+export default async function InicioPage() {
+  const supabase = await createClient();
+  const { data: profile } = await supabase.from("profiles").select("nome").maybeSingle();
+  const firstName = profile?.nome?.split(" ")[0];
+
   return (
     <>
-      <PageHeader title="Olá!" subtitle="Acompanhe sua glicemia no dia a dia." />
+      <PageHeader
+        title={firstName ? `Olá, ${firstName}!` : "Olá!"}
+        subtitle="Acompanhe sua glicemia no dia a dia."
+      />
 
       <Link
         href="/registrar"
