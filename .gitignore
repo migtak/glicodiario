@@ -42,3 +42,8 @@ next-env.d.ts
 
 # exemplo de variáveis (pode ir para o git)
 !.env.example
+
+# playwright
+/e2e/.auth/
+/test-results/
+/playwright-report/

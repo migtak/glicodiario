@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
-import { ComingSoon, PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
+import { NewReadingForm } from "@/components/reading-form";
+import { getFaixasUsuario } from "@/lib/data/glucose";
+import { toLocalInput } from "@/lib/format";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Registrar" };
 
-export default function RegistrarPage() {
+export default async function RegistrarPage() {
+  const supabase = await createClient();
+  const faixas = await getFaixasUsuario(supabase);
+
   return (
     <>
       <PageHeader title="Registrar glicemia" />
-      <ComingSoon phase={4}>
-        Aqui você vai informar o valor do glicosímetro e o momento da medição.
-      </ComingSoon>
+      <NewReadingForm faixas={faixas} defaults={{ medidoEm: toLocalInput(new Date()) }} />
     </>
   );
 }

@@ -37,3 +37,9 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - Os limites de segurança (<54, <70, ≥250) têm prioridade sobre qualquer faixa, inclusive as personalizadas.
 - Qualquer mudança nessas regras exige atualizar `classify.test.ts`.
 - Para exibir: `GlucoseBadge` e `TOM_CLASSES` (`src/components/glucose-badge.tsx`).
+
+## Dados e testes E2E
+- Leitura no servidor: `src/lib/data/glucose.ts`. Escrita: Server Actions em `src/app/(app)/glicemia-actions.ts`, que chamam `revalidatePath("/", "layout")`.
+- Tipos do banco escritos à mão em `src/lib/database.types.ts`: atualize junto com as migrações.
+- Formulário de medição: `src/components/reading-form.tsx`. Valores de risco pedem confirmação antes de salvar.
+- `npm run e2e`: Playwright com o Edge instalado (`channel: "msedge"`), em viewport de celular (390px) e desktop. Precisa de `E2E_EMAIL` e `E2E_PASSWORD` no `.env.local` (conta de teste confirmada) e usa o servidor dev já rodando, se houver.
