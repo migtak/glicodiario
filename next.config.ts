@@ -9,6 +9,8 @@ const lanAddresses = Object.values(networkInterfaces())
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: lanAddresses,
+  // no canto de cima, para não cobrir a barra de navegação inferior no celular
+  devIndicators: { position: "top-right" },
 };
 
 export default nextConfig;

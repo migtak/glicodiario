@@ -75,7 +75,7 @@ export function ReadingListByDay({ readings, faixas }: { readings: Reading[]; fa
     <div className="flex flex-col gap-6">
       {[...days.entries()].map(([key, items]) => (
         <section key={key} aria-labelledby={`dia-${key}`}>
-          <h2 id={`dia-${key}`} className="mb-2 text-base font-semibold capitalize">
+          <h2 id={`dia-${key}`} className="mb-2 text-base font-semibold first-letter:uppercase">
             {formatDateLong(new Date(items[0].medido_em))}
           </h2>
           <ul className="divide-y overflow-hidden rounded-xl border">

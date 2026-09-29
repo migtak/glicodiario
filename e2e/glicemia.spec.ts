@@ -61,7 +61,7 @@ test("valor de risco pede confirmação e mostra alerta", async ({ page }) => {
   const obs = marker();
 
   await registrar(page, "45", "Aleatório", obs);
-  const confirmacao = page.getByRole("alert");
+  const confirmacao = page.getByRole("alert").filter({ hasText: "Confirme o valor" });
   await expect(confirmacao).toContainText("Confirme o valor: 45 mg/dL");
 
   // "Corrigir" não salva
@@ -70,7 +70,7 @@ test("valor de risco pede confirmação e mostra alerta", async ({ page }) => {
 
   await page.getByRole("button", { name: "Salvar", exact: true }).click();
   await page.getByRole("button", { name: "Sim, salvar" }).click();
-  const alerta = page.getByRole("alert");
+  const alerta = page.getByRole("alert").filter({ hasText: "Medição salva" });
   await expect(alerta).toContainText("Muito baixa");
   await expect(alerta).toContainText("procure atendimento médico");
 
@@ -86,4 +86,21 @@ test("recusa valor fora do intervalo", async ({ page }) => {
   // validação nativa do navegador impede o envio
   expect(await valor.evaluate((el: HTMLInputElement) => el.validity.rangeOverflow)).toBe(true);
   await expect(page.getByText("Medição salva")).toHaveCount(0);
+});
+
+test("nenhuma tela tem rolagem lateral", async ({ page }) => {
+  const obs = marker();
+  // com uma medição na lista, para o histórico ter conteúdo
+  await registrar(page, "92", "Jejum", obs);
+  await expect(page.getByText("Medição salva")).toBeVisible();
+
+  for (const path of ["/inicio", "/registrar", "/historico", "/graficos", "/configuracoes"]) {
+    await page.goto(path);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, `rolagem lateral em ${path}`).toBeLessThanOrEqual(0);
+  }
+
+  await excluir(page, obs);
 });
