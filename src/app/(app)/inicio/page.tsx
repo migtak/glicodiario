@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CirclePlus } from "lucide-react";
+import { Activity, CirclePlus, Scale, Utensils } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { ReadingList } from "@/components/reading-list";
@@ -10,6 +10,12 @@ import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Início" };
+
+const ATALHOS = [
+  { tipo: "refeicao", label: "Refeição", icon: Utensils },
+  { tipo: "atividade", label: "Atividade", icon: Activity },
+  { tipo: "peso", label: "Peso", icon: Scale },
+] as const;
 
 export default async function InicioPage() {
   const supabase = await createClient();
@@ -34,6 +40,22 @@ export default async function InicioPage() {
         <CirclePlus className="size-6" aria-hidden />
         Registrar glicemia
       </Link>
+
+      <div className="mt-3 grid grid-cols-3 gap-2 sm:flex">
+        {ATALHOS.map(({ tipo, label, icon: Icon }) => (
+          <Link
+            key={tipo}
+            href={`/registrar?tipo=${tipo}`}
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "h-auto min-h-14 flex-col gap-1 py-2 text-sm sm:h-12 sm:flex-row sm:gap-2 sm:px-4 sm:text-base",
+            )}
+          >
+            <Icon className="size-5" aria-hidden />
+            {label}
+          </Link>
+        ))}
+      </div>
 
       <section className="mt-8">
         <div className="mb-3 flex items-baseline justify-between gap-4">

@@ -3,11 +3,13 @@ import Link from "next/link";
 import { CirclePlus } from "lucide-react";
 import { FormMessage } from "@/components/form-ui";
 import { PageHeader } from "@/components/page-header";
-import { ReadingListByDay } from "@/components/reading-list";
+import { TimelineByDay, type TimelineItem } from "@/components/reading-list";
 import { buttonVariants } from "@/components/ui/button";
 import { getFaixasUsuario, listReadings } from "@/lib/data/glucose";
+import { listActivities, listMeals, listWeights } from "@/lib/data/records";
 import { CONTEXTOS, CONTEXTO_LABEL, isContexto } from "@/lib/glucose/ranges";
 import { diasAtras } from "@/lib/format";
+import { TIPOS_REGISTRO, isTipoRegistro, type TipoRegistro } from "@/lib/records";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +23,13 @@ const PERIODOS = [
 ] as const;
 const PERIODO_PADRAO = "30";
 
+const TIPO_FILTRO_LABEL: Record<TipoRegistro, string> = {
+  glicemia: "Glicemia",
+  refeicao: "Refeições",
+  atividade: "Atividades",
+  peso: "Peso",
+};
+
 function one(v: string | string[] | undefined) {
   return typeof v === "string" ? v : undefined;
 }
@@ -30,25 +39,44 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
   const periodo = PERIODOS.find((p) => p.value === one(params.periodo)) ?? PERIODOS[1];
   const contextoParam = one(params.contexto);
   const contexto = isContexto(contextoParam) ? contextoParam : undefined;
+  const tipoParam = one(params.tipo);
+  // escolher um momento da medição implica ver só glicemias
+  const tipo: TipoRegistro | undefined = contexto ? "glicemia" : isTipoRegistro(tipoParam) ? tipoParam : undefined;
+  const mostra = (t: TipoRegistro) => !tipo || tipo === t;
 
   const desde = periodo.dias ? diasAtras(periodo.dias) : undefined;
   const supabase = await createClient();
-  const [faixas, { readings, error }] = await Promise.all([
+  const vazio = { items: [], error: false };
+  const [faixas, glicemias, refeicoes, atividades, pesos] = await Promise.all([
     getFaixasUsuario(supabase),
-    listReadings(supabase, { desde, contexto }),
+    mostra("glicemia") ? listReadings(supabase, { desde, contexto }) : { readings: [], error: false },
+    // refeições também servem para mostrar o vínculo "Após: …" nas glicemias
+    mostra("glicemia") || mostra("refeicao") ? listMeals(supabase, { desde }) : vazio,
+    mostra("atividade") ? listActivities(supabase, { desde }) : vazio,
+    mostra("peso") ? listWeights(supabase, { desde }) : vazio,
   ]);
+  const error = glicemias.error || refeicoes.error || atividades.error || pesos.error;
 
-  const href = (next: { periodo?: string; contexto?: string | null }) => {
+  const items: TimelineItem[] = [
+    ...glicemias.readings.map((reading) => ({ kind: "glicemia" as const, at: reading.medido_em, reading })),
+    ...(mostra("refeicao") ? refeicoes.items : []).map((meal) => ({ kind: "refeicao" as const, at: meal.ocorreu_em, meal })),
+    ...atividades.items.map((activity) => ({ kind: "atividade" as const, at: activity.ocorreu_em, activity })),
+    ...pesos.items.map((weight) => ({ kind: "peso" as const, at: weight.medido_em, weight })),
+  ];
+
+  const href = (next: { periodo?: string; tipo?: string | null; contexto?: string | null }) => {
     const q = new URLSearchParams();
     const p = next.periodo ?? periodo.value;
     const c = next.contexto === undefined ? contexto : next.contexto;
+    const t = next.tipo === undefined ? tipo : next.tipo;
     if (p !== PERIODO_PADRAO) q.set("periodo", p);
     if (c) q.set("contexto", c);
+    else if (t) q.set("tipo", t);
     const s = q.toString();
     return s ? `/historico?${s}` : "/historico";
   };
 
-  const aviso = params.salvo ? "Alterações salvas." : params.excluido ? "Medição excluída." : undefined;
+  const aviso = params.salvo ? "Alterações salvas." : params.excluido ? "Registro excluído." : undefined;
 
   return (
     <>
@@ -66,34 +94,47 @@ export default async function HistoricoPage({ searchParams }: PageProps<"/histor
           items={PERIODOS.map((p) => ({ label: p.label, href: href({ periodo: p.value }), active: p === periodo }))}
         />
         <Chips
-          label="Momento"
+          label="Tipo"
           items={[
-            { label: "Todos", href: href({ contexto: null }), active: !contexto },
-            ...CONTEXTOS.map((c) => ({
-              label: CONTEXTO_LABEL[c],
-              href: href({ contexto: c }),
-              active: c === contexto,
+            { label: "Tudo", href: href({ tipo: null, contexto: null }), active: !tipo },
+            ...TIPOS_REGISTRO.map((t) => ({
+              label: TIPO_FILTRO_LABEL[t],
+              href: href({ tipo: t, contexto: null }),
+              active: t === tipo && !contexto,
             })),
           ]}
         />
+        {mostra("glicemia") && (
+          <Chips
+            label="Momento da glicemia"
+            items={[
+              { label: "Todos", href: href({ contexto: null }), active: !contexto },
+              ...CONTEXTOS.map((c) => ({
+                label: CONTEXTO_LABEL[c],
+                href: href({ contexto: c }),
+                active: c === contexto,
+              })),
+            ]}
+          />
+        )}
       </nav>
 
       {error ? (
-        <FormMessage error="Não foi possível carregar as medições. Verifique sua conexão e recarregue a página." />
-      ) : readings.length === 0 ? (
+        <FormMessage error="Não foi possível carregar os registros. Verifique sua conexão e recarregue a página." />
+      ) : items.length === 0 ? (
         <div className="rounded-xl border border-dashed p-6 text-center">
-          <p className="text-base text-muted-foreground">Nenhuma medição neste período.</p>
+          <p className="text-base text-muted-foreground">Nenhum registro neste período.</p>
           <Link href="/registrar" className={cn(buttonVariants(), "mt-4 h-12 gap-2 px-6 text-base")}>
             <CirclePlus className="size-5" aria-hidden />
-            Registrar glicemia
+            Registrar
           </Link>
         </div>
       ) : (
         <>
           <p className="mb-4 text-sm text-muted-foreground">
-            {readings.length} {readings.length === 1 ? "medição" : "medições"}
+            {items.length} {items.length === 1 ? "registro" : "registros"}
           </p>
-          <ReadingListByDay readings={readings} faixas={faixas} />
+          <TimelineByDay items={items} faixas={faixas} meals={refeicoes.items} />
         </>
       )}
     </>

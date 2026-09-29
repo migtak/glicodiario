@@ -12,6 +12,7 @@ export type SaveReadingState =
   | undefined;
 
 const MAX_OBS = 500;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** tolerância para relógios levemente adiantados */
 const FUTURE_TOLERANCE_MS = 5 * 60_000;
 
@@ -30,6 +31,8 @@ export async function saveReading(
   const contexto = text(formData, "contexto");
   const medidoEm = localInputToDate(text(formData, "medido_em"));
   const observacao = text(formData, "observacao");
+  // só medições pós-refeição podem ter refeição vinculada
+  const mealId = contexto === "pos_1h" || contexto === "pos_2h" ? text(formData, "meal_id") : "";
 
   const erroValor = text(formData, "valor") ? validarValor(valor) : "Informe o valor medido.";
   if (erroValor) return { error: erroValor };
@@ -38,6 +41,7 @@ export async function saveReading(
   if (medidoEm.getTime() > Date.now() + FUTURE_TOLERANCE_MS) {
     return { error: "A data e hora não podem estar no futuro." };
   }
+  if (mealId && !UUID.test(mealId)) return { error: "Refeição inválida." };
   if (observacao.length > MAX_OBS) {
     return { error: `A observação pode ter no máximo ${MAX_OBS} caracteres.` };
   }
@@ -47,6 +51,7 @@ export async function saveReading(
     contexto,
     medido_em: medidoEm.toISOString(),
     observacao: observacao || null,
+    meal_id: mealId || null,
   };
 
   const supabase = await createClient();
@@ -61,11 +66,4 @@ export async function saveReading(
   revalidatePath("/", "layout");
   if (id) redirect("/historico?salvo=1");
   return { saved: { valor, contexto } };
-}
-
-export async function deleteReading(id: string) {
-  const supabase = await createClient();
-  await supabase.from("glucose_readings").delete().eq("id", id);
-  revalidatePath("/", "layout");
-  redirect("/historico?excluido=1");
 }

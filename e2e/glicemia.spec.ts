@@ -1,33 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { excluir, marker, registrar } from "./helpers";
 
 test.skip(!process.env.E2E_EMAIL, "Defina E2E_EMAIL e E2E_PASSWORD no .env.local");
-
-/** Marca única na observação, para achar a medição criada por este teste. */
-function marker() {
-  return `e2e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
-async function registrar(page: Page, valor: string, momento: string, obs: string) {
-  await page.goto("/registrar");
-  await page.getByLabel("Valor do glicosímetro").fill(valor);
-  await page.getByText(momento, { exact: true }).click();
-  await page.getByLabel(/Observação/).fill(obs);
-  await page.getByRole("button", { name: "Salvar", exact: true }).click();
-}
-
-async function abrirNoHistorico(page: Page, obs: string) {
-  await page.goto("/historico");
-  await page.getByRole("link").filter({ hasText: obs }).click();
-  await expect(page.getByRole("heading", { name: "Editar medição" })).toBeVisible();
-}
-
-async function excluir(page: Page, obs: string) {
-  await abrirNoHistorico(page, obs);
-  await page.getByRole("button", { name: "Excluir medição" }).click();
-  await page.getByRole("button", { name: "Sim, excluir" }).click();
-  await expect(page.getByText("Medição excluída.")).toBeVisible();
-  await expect(page.getByText(obs)).toHaveCount(0);
-}
 
 test("registrar, ver no histórico, editar e excluir", async ({ page }) => {
   const obs = marker();

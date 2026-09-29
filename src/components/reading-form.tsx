@@ -5,10 +5,11 @@ import { useActionState, useRef, useState } from "react";
 import { TriangleAlert } from "lucide-react";
 import { saveReading } from "@/app/(app)/glicemia-actions";
 import { FormMessage } from "@/components/form-ui";
+import { choiceClass } from "@/components/record-forms";
 import { GlucoseBadge, TOM_CLASSES } from "@/components/glucose-badge";
 import { SubmitButton } from "@/components/submit-button";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { toLocalInput } from "@/lib/format";
+import { formatDateTime, toLocalInput } from "@/lib/format";
 import { classificar } from "@/lib/glucose/classify";
 import {
   CONTEXTOS,
@@ -28,9 +29,13 @@ type Defaults = {
   /** formato datetime-local, no fuso do app */
   medidoEm: string;
   observacao?: string | null;
+  mealId?: string | null;
 };
 
-type Props = { faixas: Record<Contexto, Faixa>; defaults: Defaults };
+/** Refeição que pode ser vinculada a uma medição pós-refeição. */
+export type MealOption = { id: string; descricao: string; ocorreuEm: string };
+
+type Props = { faixas: Record<Contexto, Faixa>; defaults: Defaults; meals: MealOption[] };
 
 /**
  * Formulário de nova medição. Depois de salvar mostra o resultado e permite
@@ -41,12 +46,18 @@ export function NewReadingForm(props: Props) {
   // a partir da 2ª medição, a hora padrão é a do momento em que o formulário reabre
   const defaults = round === 0 ? props.defaults : { medidoEm: toLocalInput(new Date()) };
   return (
-    <ReadingForm key={round} faixas={props.faixas} defaults={defaults} onNew={() => setRound((r) => r + 1)} />
+    <ReadingForm
+      key={round}
+      faixas={props.faixas}
+      meals={props.meals}
+      defaults={defaults}
+      onNew={() => setRound((r) => r + 1)}
+    />
   );
 }
 
 /** Usado também na edição (com `defaults.id`). */
-export function ReadingForm({ faixas, defaults, onNew }: Props & { onNew?: () => void }) {
+export function ReadingForm({ faixas, defaults, meals, onNew }: Props & { onNew?: () => void }) {
   const [state, action, pending] = useActionState(saveReading, undefined);
   const [valor, setValor] = useState(defaults.valor?.toString() ?? "");
   const [contexto, setContexto] = useState<Contexto | undefined>(defaults.contexto);
@@ -113,10 +124,7 @@ export function ReadingForm({ faixas, defaults, onNew }: Props & { onNew?: () =>
         <legend className="mb-2 text-base font-medium">Momento da medição</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {CONTEXTOS.map((c) => (
-            <label
-              key={c}
-              className="flex min-h-14 cursor-pointer items-center justify-center rounded-lg border-2 px-3 text-center text-base font-medium transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
-            >
+            <label key={c} className={choiceClass}>
               <input
                 type="radio"
                 name="contexto"
@@ -134,6 +142,10 @@ export function ReadingForm({ faixas, defaults, onNew }: Props & { onNew?: () =>
           ))}
         </div>
       </fieldset>
+
+      {(contexto === "pos_1h" || contexto === "pos_2h") && (
+        <MealSelect meals={meals} defaultValue={defaults.mealId ?? ""} />
+      )}
 
       <div className="flex flex-col gap-2">
         <label htmlFor="medido_em" className="text-base font-medium">
@@ -238,6 +250,36 @@ function Resultado({
           Ver histórico
         </Link>
       </div>
+    </div>
+  );
+}
+
+function MealSelect({ meals, defaultValue }: { meals: MealOption[]; defaultValue: string }) {
+  if (meals.length === 0) {
+    return (
+      <p className="rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">
+        Dica: registre a refeição na aba “Refeição” para poder ligá-la a esta medição.
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor="meal_id" className="text-base font-medium">
+        Após qual refeição? <span className="font-normal text-muted-foreground">(opcional)</span>
+      </label>
+      <select
+        id="meal_id"
+        name="meal_id"
+        defaultValue={defaultValue}
+        className="h-12 w-full rounded-lg border border-input bg-background px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <option value="">Nenhuma</option>
+        {meals.map((m) => (
+          <option key={m.id} value={m.id}>
+            {formatDateTime(new Date(m.ocorreuEm))} · {m.descricao.length > 40 ? m.descricao.slice(0, 40) + "…" : m.descricao}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

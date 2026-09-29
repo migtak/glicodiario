@@ -7,10 +7,10 @@ type Client = SupabaseClient<Database>;
 
 export type Reading = Pick<
   GlucoseReading,
-  "id" | "valor_mg_dl" | "contexto" | "medido_em" | "observacao"
+  "id" | "valor_mg_dl" | "contexto" | "medido_em" | "observacao" | "meal_id"
 >;
 
-const READING_COLUMNS = "id, valor_mg_dl, contexto, medido_em, observacao";
+const READING_COLUMNS = "id, valor_mg_dl, contexto, medido_em, observacao, meal_id";
 
 /** Faixas do usuário: padrões + personalizações salvas em `target_ranges`. */
 export async function getFaixasUsuario(supabase: Client): Promise<Record<Contexto, Faixa>> {

@@ -43,3 +43,11 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - Tipos do banco escritos à mão em `src/lib/database.types.ts`: atualize junto com as migrações.
 - Formulário de medição: `src/components/reading-form.tsx`. Valores de risco pedem confirmação antes de salvar.
 - `npm run e2e`: Playwright com o Edge instalado (`channel: "msedge"`), em viewport de celular (390px) e desktop. Precisa de `E2E_EMAIL` e `E2E_PASSWORD` no `.env.local` (conta de teste confirmada) e usa o servidor dev já rodando, se houver.
+
+## Registros complementares (refeição, atividade, peso)
+- Regras e formatação em `src/lib/records.ts` (com testes). Leitura: `src/lib/data/records.ts`. Escrita e exclusão (de qualquer tipo): `src/app/(app)/registros-actions.ts`.
+- Formulários em `src/components/record-forms.tsx`: `choiceClass` e `inputClass` são os estilos compartilhados de opções e campos.
+- `/registrar?tipo=refeicao|atividade|peso` para as abas; a edição fica em `/historico/{refeicao|atividade|peso}/[id]` (glicemia: `/historico/[id]`).
+- Uma glicemia `pos_1h`/`pos_2h` pode ter `meal_id`. A refeição das últimas 4h vem sugerida.
+- Histórico: `TimelineByDay` (`src/components/reading-list.tsx`) mistura todos os tipos, e `?tipo=` filtra.
+- Testes E2E: funções compartilhadas em `e2e/helpers.ts`. Todo teste apaga o que cria.
