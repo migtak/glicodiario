@@ -42,7 +42,7 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - Leitura no servidor: `src/lib/data/glucose.ts`. Escrita: Server Actions em `src/app/(app)/glicemia-actions.ts`, que chamam `revalidatePath("/", "layout")`.
 - Tipos do banco escritos à mão em `src/lib/database.types.ts`: atualize junto com as migrações.
 - Formulário de medição: `src/components/reading-form.tsx`. Valores de risco pedem confirmação antes de salvar.
-- `npm run e2e`: Playwright com o Edge instalado (`channel: "msedge"`), em viewport de celular (390px) e desktop. Precisa de `E2E_EMAIL` e `E2E_PASSWORD` no `.env.local` (conta de teste confirmada) e usa o servidor dev já rodando, se houver.
+- `npm run e2e` (já com `--use-system-ca`): Playwright com o Edge instalado (`channel: "msedge"`), em viewport de celular (390px) e desktop. Precisa de `E2E_EMAIL` e `E2E_PASSWORD` no `.env.local` (conta de teste confirmada) e usa o servidor dev já rodando, se houver.
 
 ## Registros complementares (refeição, atividade, peso)
 - Regras e formatação em `src/lib/records.ts` (com testes). Leitura: `src/lib/data/records.ts`. Escrita e exclusão (de qualquer tipo): `src/app/(app)/registros-actions.ts`.
@@ -63,3 +63,8 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - Ações em `src/app/(app)/configuracoes/actions.ts`. `saveRanges` guarda em `target_ranges` só os momentos diferentes do padrão, e `deleteAccount` chama a função `delete_my_account()` do banco depois da confirmação digitada "EXCLUIR".
 - Editor de faixas: `src/components/ranges-form.tsx`. Exportação: `GET /configuracoes/exportar`, que gera o CSV com `src/lib/csv.ts` (separador `;`, vírgula decimal, BOM UTF-8, proteção contra fórmulas).
 - Testes E2E que mudam faixas as restauram no `afterEach`, porque a conta de teste é compartilhada. A exclusão de conta **não** é testada de ponta a ponta, para não apagar a conta de teste.
+
+## Sessão encerrada ou conta excluída
+- O `proxy.ts` confere a assinatura do login (`getClaims`) **e** pergunta ao Supabase se usuário e sessão ainda existem (`sessaoInvalida`, em `src/lib/supabase/session-check.ts`). Se não existirem, apaga os cookies e leva para `/login?aviso=sessao-encerrada|conta-indisponivel`.
+- Só desloga com resposta clara do Supabase. Falha de rede ou do servidor nunca desloga (ver `session-check.test.ts`).
+- Atenção: a biblioteca converte `session_not_found` em `AuthSessionMissingError`.

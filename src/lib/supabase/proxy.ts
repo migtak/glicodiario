@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { sessaoInvalida } from "@/lib/supabase/session-check";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Páginas acessíveis sem login. */
@@ -39,15 +40,24 @@ export async function updateSession(request: NextRequest) {
   const loggedIn = Boolean(data?.claims);
   const { pathname } = request.nextUrl;
 
-  const redirectTo = (path: string) => {
+  const redirectTo = (path: string, search = "") => {
     const url = request.nextUrl.clone();
     url.pathname = path;
-    url.search = "";
+    url.search = search;
     const redirect = NextResponse.redirect(url);
     // preserva os cookies de sessão renovados
     response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
     return redirect;
   };
+
+  if (loggedIn) {
+    const motivo = await sessaoInvalida(supabase);
+    if (motivo) {
+      // apaga os cookies de sessão deste navegador (o redirect abaixo leva junto)
+      await supabase.auth.signOut({ scope: "local" });
+      return redirectTo("/login", `?aviso=${motivo}`);
+    }
+  }
 
   if (!loggedIn && !matches(pathname, PUBLIC_PATHS)) return redirectTo("/login");
   if (loggedIn && matches(pathname, GUEST_ONLY_PATHS)) return redirectTo("/inicio");

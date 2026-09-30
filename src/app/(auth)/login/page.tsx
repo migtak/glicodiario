@@ -5,6 +5,8 @@ export const metadata: Metadata = { title: "Entrar" };
 
 const NOTICES: Record<string, { texto: string; tipo: "error" | "success" }> = {
   "conta-excluida": { texto: "Sua conta e todos os seus dados foram excluídos.", tipo: "success" },
+  "conta-indisponivel": { tipo: "error", texto: "Esta conta não existe mais, por isso sua sessão foi encerrada. Entre com outra conta ou crie uma nova." },
+  "sessao-encerrada": { tipo: "error", texto: "Sua sessão foi encerrada (por exemplo, a conta foi excluída ou você saiu em outro aparelho). Entre novamente para continuar." },
   link: { tipo: "error", texto: "Não foi possível abrir o link: ele pode ter expirado ou sido aberto em outro navegador. Se você acabou de confirmar seu e-mail, é só entrar com sua senha." },
 };
 
