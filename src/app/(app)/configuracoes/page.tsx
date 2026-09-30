@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Download, LogOut } from "lucide-react";
 import { logout } from "@/app/(auth)/actions";
 import { DeleteAccount } from "@/components/delete-account";
+import { InstallApp } from "@/components/install-app";
 import { PageHeader } from "@/components/page-header";
 import { RangesForm } from "@/components/ranges-form";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -32,6 +33,13 @@ export default async function ConfiguracoesPage() {
             Sair
           </Button>
         </form>
+      </section>
+
+      <section aria-labelledby="instalar-titulo" className="mb-10">
+        <h2 id="instalar-titulo" className="mb-3 text-lg font-semibold">
+          Instalar no celular
+        </h2>
+        <InstallApp />
       </section>
 
       <section aria-labelledby="faixas-titulo" className="mb-10">

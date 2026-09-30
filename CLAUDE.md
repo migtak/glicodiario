@@ -8,7 +8,7 @@ PWA responsivo para acompanhar glicemia (pré-diabetes/curiosidade, uso pessoal)
 A pessoa dona do projeto **não é desenvolvedora**. Explique em linguagem simples e dê instruções passo a passo (onde clicar, o que copiar) sempre que ela precisar agir, por exemplo no Supabase, no GitHub ou na Vercel. Trabalhe uma fase por vez e pare ao fim de cada uma para ela testar.
 
 ## Stack
-Next.js 16 (App Router, `src/`), TypeScript, Tailwind 4, shadcn/ui (estilo base-nova, sobre `@base-ui/react`), lucide-react, Supabase (Auth + Postgres + RLS), Vitest e Playwright. Gráficos em SVG próprio, sem biblioteca. Ainda por vir: Dexie + Serwist (offline/PWA).
+Next.js 16 (App Router, `src/`), TypeScript, Tailwind 4, shadcn/ui (estilo base-nova, sobre `@base-ui/react`), lucide-react, Supabase (Auth + Postgres + RLS), Vitest e Playwright. Gráficos em SVG próprio, sem biblioteca. Offline: Dexie (fila no IndexedDB) + service worker escrito à mão (`public/sw.js`, sem Serwist).
 
 ## Comandos
 - `npm run dev`: servidor local em http://localhost:3000
@@ -74,3 +74,21 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - Impressão: `print:hidden` nos controles, e a navegação usa `print:!hidden` para vencer o `md:flex`. `@media print` em `globals.css` define margem da página e mantém as cores. O `TimeChart` usa `viewBox` e se adapta à largura da folha.
 - Para conferir o PDF: `page.emulateMedia({ media: "print" })` + `page.pdf()` no Playwright.
 - Scripts avulsos que reaproveitam `e2e/.auth/user.json` depois de mais de 1h caem no login ("sessão encerrada"), porque o token de renovação já foi trocado. Nesse caso, rode antes `npm run e2e -- --project=setup`.
+
+## PWA e modo offline
+- **Validação única:** `src/lib/parse-records.ts` lê e valida os formulários, e é usado pelas Server Actions e pela fila offline. Mudou uma regra? Mude ali e em `parse-records.test.ts`.
+- **Fila offline:** `src/lib/offline/queue.ts` (Dexie, banco `glicodiario`, tabela `pendentes`).
+  - Cada item tem `id` gerado no aparelho, igual ao id final no banco (`novo_id` no formulário); o erro 23505 no reenvio conta como sucesso.
+  - Cada item guarda também `userId`: só é enviado com a sessão do dono.
+- **Formulários:** `criarOuEnfileirar` e `editarComRede` (`src/lib/offline/salvar.ts`). Criação sem rede vai para a fila; edição e exclusão sem rede mostram aviso. Use `unstable_rethrow` ao capturar erros de Server Actions.
+- **Estado e aviso:** `OfflineProvider` (no layout logado) guarda o estado e envia a fila ao abrir o app, quando a internet volta e a cada 30s. `SyncStatus` mostra os avisos.
+- **Service worker:** `public/sw.js`, registrado **só em produção** (`ServiceWorkerRegister`).
+  - Estáticos: cache-first. Páginas e RSC: rede primeiro, cópia guardada como reserva; tela nunca visitada mostra `/offline`.
+  - Nunca guarda login, links de e-mail nem o CSV.
+  - Ao mudar o arquivo, aumente `VERSAO`.
+  - As telas de login mandam `limpar-dados` para apagar as páginas guardadas.
+- **Manifesto e ícones:** `src/app/manifest.ts`, `public/icons/*`, `src/app/icon.svg`, `src/app/apple-icon.png`. `/sw.js`, `/manifest.webmanifest` e `/offline` não passam pelo login (matcher do proxy e `PUBLIC_PATHS`).
+- **Testar o service worker:** `npm run build`, `node --use-system-ca node_modules/next/dist/bin/next start -p 3001` e `PWA_URL=http://localhost:3001 npm run e2e:pwa`.
+- **Instalação exige HTTPS** (ou localhost). No Wi-Fi local por `http://192.168…` o celular não instala nem usa o service worker. A fila funciona, com um UUID alternativo.
+- **"Sair"** usa `signOut({ scope: "local" })`: só este aparelho. O padrão da biblioteca encerraria a conta em todos os aparelhos.
+- **Testes E2E que clicam em "Sair"** devem usar sessão própria (`storageState` vazio + login na tela): a sessão do setup é compartilhada.

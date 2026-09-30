@@ -3,7 +3,7 @@ import { sessaoInvalida } from "@/lib/supabase/session-check";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Páginas acessíveis sem login. */
-const PUBLIC_PATHS = ["/login", "/cadastro", "/recuperar-senha", "/auth"];
+const PUBLIC_PATHS = ["/login", "/cadastro", "/recuperar-senha", "/auth", "/offline"];
 /** Páginas de login/cadastro: quem já está logado vai direto para o início. */
 const GUEST_ONLY_PATHS = ["/login", "/cadastro", "/recuperar-senha"];
 

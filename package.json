@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "node --use-system-ca node_modules/@playwright/test/cli.js test"
+    "e2e": "node --use-system-ca node_modules/@playwright/test/cli.js test",
+    "e2e:pwa": "node --use-system-ca node_modules/@playwright/test/cli.js test e2e/pwa.spec.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

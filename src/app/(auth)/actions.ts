@@ -100,6 +100,7 @@ export async function updatePassword(_: FormState, formData: FormData): Promise<
 
 export async function logout() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // "local": sai só deste aparelho (o padrão da biblioteca derrubaria todos os aparelhos da conta)
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/login");
 }

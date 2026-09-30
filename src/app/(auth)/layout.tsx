@@ -1,4 +1,5 @@
 import { Droplet } from "lucide-react";
+import { LimparAoSair } from "@/components/service-worker";
 import { DISCLAIMER_TEXT } from "@/lib/disclaimer";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -12,6 +13,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {children}
       </main>
       <p className="mt-6 max-w-md text-center text-sm text-muted-foreground">{DISCLAIMER_TEXT}</p>
+      <LimparAoSair />
     </div>
   );
 }
