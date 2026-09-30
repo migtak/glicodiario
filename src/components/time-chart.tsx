@@ -101,11 +101,11 @@ export function TimeChart({
   }
 
   return (
-    <div ref={medir} className="relative w-full select-none" style={{ height: totalH }}>
+    <div ref={medir} className="relative w-full select-none break-inside-avoid print:!min-h-0" style={{ minHeight: totalH }}>
       {largura > 0 && (
         <svg
-          width={largura}
-          height={totalH}
+          viewBox={`0 0 ${largura} ${totalH}`}
+          width="100%"
           role="img"
           aria-label={ariaLabel}
           className="touch-pan-y overflow-visible"

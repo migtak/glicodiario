@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CirclePlus, TriangleAlert } from "lucide-react";
+import { CirclePlus, FileText, TriangleAlert } from "lucide-react";
 import { Chips } from "@/components/chips";
 import { PageHeader } from "@/components/page-header";
 import { ContextAverages, DistributionBar, StatTile, extremoDetalhe } from "@/components/summary";
@@ -117,6 +117,14 @@ export default async function GraficosPage({ searchParams }: PageProps<"/grafico
   return (
     <>
       <PageHeader title="Gráficos e resumo" />
+
+      <Link
+        href={periodo.value === PERIODO_PADRAO ? "/relatorio" : `/relatorio?periodo=${periodo.value}`}
+        className={cn(buttonVariants({ variant: "outline" }), "mb-6 h-12 gap-2 px-5 text-base")}
+      >
+        <FileText className="size-5" aria-hidden />
+        Relatório para o médico
+      </Link>
 
       <nav aria-label="Período" className="mb-6">
         <Chips

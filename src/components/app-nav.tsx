@@ -19,7 +19,7 @@ export function AppNav() {
 
   return (
     <>
-      <aside className="hidden md:flex md:w-60 md:shrink-0 md:flex-col md:border-r md:bg-sidebar">
+      <aside className="hidden md:flex print:!hidden md:w-60 md:shrink-0 md:flex-col md:border-r md:bg-sidebar">
         <div className="flex items-center gap-2 px-5 py-6 text-lg font-semibold text-primary">
           <Droplet className="size-6" aria-hidden />
           GlicoDiário
@@ -49,7 +49,7 @@ export function AppNav() {
 
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-40 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden print:!hidden"
       >
         <ul className="grid grid-cols-5">
           {items.map(({ href, label, icon: Icon }) => {

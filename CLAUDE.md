@@ -68,3 +68,9 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - O `proxy.ts` confere a assinatura do login (`getClaims`) **e** pergunta ao Supabase se usuário e sessão ainda existem (`sessaoInvalida`, em `src/lib/supabase/session-check.ts`). Se não existirem, apaga os cookies e leva para `/login?aviso=sessao-encerrada|conta-indisponivel`.
 - Só desloga com resposta clara do Supabase. Falha de rede ou do servidor nunca desloga (ver `session-check.test.ts`).
 - Atenção: a biblioteca converte `session_not_found` em `AuthSessionMissingError`.
+
+## Relatório para o médico
+- `src/app/(app)/relatorio/page.tsx` (`?periodo=7|30|90`), acessado pelo botão na tela de Gráficos. Reaproveita `stats.ts`, os componentes de `summary.tsx`, `TimeChart` e `ReferenceRanges`.
+- Impressão: `print:hidden` nos controles, e a navegação usa `print:!hidden` para vencer o `md:flex`. `@media print` em `globals.css` define margem da página e mantém as cores. O `TimeChart` usa `viewBox` e se adapta à largura da folha.
+- Para conferir o PDF: `page.emulateMedia({ media: "print" })` + `page.pdf()` no Playwright.
+- Scripts avulsos que reaproveitam `e2e/.auth/user.json` depois de mais de 1h caem no login ("sessão encerrada"), porque o token de renovação já foi trocado. Nesse caso, rode antes `npm run e2e -- --project=setup`.
