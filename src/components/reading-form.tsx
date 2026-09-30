@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
-import { TriangleAlert } from "lucide-react";
-import { saveReading } from "@/app/(app)/glicemia-actions";
+import { CloudOff, TriangleAlert } from "lucide-react";
+import { saveReading, type SaveReadingState } from "@/app/(app)/glicemia-actions";
+import { useFilaOffline } from "@/components/offline-provider";
+import { criarOuEnfileirar, editarComRede } from "@/lib/offline/salvar";
 import { FormMessage } from "@/components/form-ui";
 import { choiceClass } from "@/components/record-forms";
 import { GlucoseBadge, TOM_CLASSES } from "@/components/glucose-badge";
@@ -58,7 +60,22 @@ export function NewReadingForm(props: Props) {
 
 /** Usado também na edição (com `defaults.id`). */
 export function ReadingForm({ faixas, defaults, meals, onNew }: Props & { onNew?: () => void }) {
-  const [state, action, pending] = useActionState(saveReading, undefined);
+  const { userId } = useFilaOffline();
+  const [state, action, pending] = useActionState(
+    (prev: SaveReadingState, formData: FormData): Promise<SaveReadingState> =>
+      defaults.id
+        ? editarComRede(saveReading, prev, formData, (error) => ({ error }))
+        : criarOuEnfileirar(saveReading, prev, formData, {
+            userId,
+            tipo: "glicemia",
+            erro: (error) => ({ error }),
+            aoEnfileirar: (row) => ({
+              saved: { valor: Number(row.valor_mg_dl), contexto: row.contexto as Contexto },
+              offline: true,
+            }),
+          }),
+    undefined,
+  );
   const [valor, setValor] = useState(defaults.valor?.toString() ?? "");
   const [contexto, setContexto] = useState<Contexto | undefined>(defaults.contexto);
   const [confirmando, setConfirmando] = useState(false);
@@ -66,7 +83,7 @@ export function ReadingForm({ faixas, defaults, meals, onNew }: Props & { onNew?
   const formRef = useRef<HTMLFormElement>(null);
 
   if (state?.saved) {
-    return <Resultado {...state.saved} faixa={faixas[state.saved.contexto]} onNew={onNew} />;
+    return <Resultado {...state.saved} offline={state.offline} faixa={faixas[state.saved.contexto]} onNew={onNew} />;
   }
 
   const numero = Number(valor);
@@ -218,11 +235,13 @@ function Resultado({
   valor,
   contexto,
   faixa,
+  offline,
   onNew,
 }: {
   valor: number;
   contexto: Contexto;
   faixa: Faixa;
+  offline?: boolean;
   onNew?: () => void;
 }) {
   const c = classificar(valor, contexto, faixa);
@@ -234,13 +253,21 @@ function Resultado({
         role={c.alerta ? "alert" : "status"}
         className={cn("rounded-xl border-2 p-5", tom.border, tom.bg)}
       >
-        <p className="text-base text-muted-foreground">Medição salva · {CONTEXTO_LABEL[contexto]}</p>
+        <p className="text-base text-muted-foreground">
+          {offline ? "Medição guardada neste aparelho" : "Medição salva"} · {CONTEXTO_LABEL[contexto]}
+        </p>
         <p className="mt-1 flex flex-wrap items-center gap-3">
           <span className={cn("text-5xl font-semibold tabular-nums", tom.text)}>{valor}</span>
           <span className="text-lg text-muted-foreground">mg/dL</span>
           <GlucoseBadge classificacao={c} className="text-base" />
         </p>
         <p className={cn("mt-3 text-base leading-relaxed", c.alerta && "font-medium")}>{c.mensagem}</p>
+        {offline && (
+          <p className="mt-3 flex items-start gap-2 border-t pt-3 text-base">
+            <CloudOff className="mt-0.5 size-5 shrink-0" aria-hidden />
+            Sem internet agora: ela será enviada sozinha quando a conexão voltar.
+          </p>
+        )}
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button type="button" onClick={onNew} className="h-12 px-6 text-base">

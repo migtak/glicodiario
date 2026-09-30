@@ -2,62 +2,37 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { validarValor } from "@/lib/glucose/classify";
-import { isContexto, type Contexto } from "@/lib/glucose/ranges";
-import { localInputToDate } from "@/lib/format";
+import type { Database } from "@/lib/database.types";
+import type { Contexto } from "@/lib/glucose/ranges";
+import { campoDe, isUuid, parseReading } from "@/lib/parse-records";
 import { createClient } from "@/lib/supabase/server";
 
 export type SaveReadingState =
-  | { error?: string; saved?: { valor: number; contexto: Contexto } }
+  | { error?: string; saved?: { valor: number; contexto: Contexto }; offline?: boolean }
   | undefined;
 
-const MAX_OBS = 500;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-/** tolerância para relógios levemente adiantados */
-const FUTURE_TOLERANCE_MS = 5 * 60_000;
-
-function text(formData: FormData, name: string): string {
-  const v = formData.get(name);
-  return typeof v === "string" ? v.trim() : "";
-}
+type GlucoseInsert = Database["public"]["Tables"]["glucose_readings"]["Insert"];
 
 /** Cria (sem `id`) ou atualiza (com `id`) uma medição de glicemia. */
 export async function saveReading(
   _: SaveReadingState,
   formData: FormData,
 ): Promise<SaveReadingState> {
-  const id = text(formData, "id");
-  const valor = Number(text(formData, "valor"));
-  const contexto = text(formData, "contexto");
-  const medidoEm = localInputToDate(text(formData, "medido_em"));
-  const observacao = text(formData, "observacao");
-  // só medições pós-refeição podem ter refeição vinculada
-  const mealId = contexto === "pos_1h" || contexto === "pos_2h" ? text(formData, "meal_id") : "";
-
-  const erroValor = text(formData, "valor") ? validarValor(valor) : "Informe o valor medido.";
-  if (erroValor) return { error: erroValor };
-  if (!isContexto(contexto)) return { error: "Escolha o momento da medição." };
-  if (!medidoEm) return { error: "Informe uma data e hora válidas." };
-  if (medidoEm.getTime() > Date.now() + FUTURE_TOLERANCE_MS) {
-    return { error: "A data e hora não podem estar no futuro." };
-  }
-  if (mealId && !UUID.test(mealId)) return { error: "Refeição inválida." };
-  if (observacao.length > MAX_OBS) {
-    return { error: `A observação pode ter no máximo ${MAX_OBS} caracteres.` };
-  }
-
-  const row = {
-    valor_mg_dl: valor,
-    contexto,
-    medido_em: medidoEm.toISOString(),
-    observacao: observacao || null,
-    meal_id: mealId || null,
-  };
+  const campo = campoDe(formData);
+  const id = campo("id");
+  const parsed = parseReading(campo);
+  if (!parsed.ok) return { error: parsed.error };
 
   const supabase = await createClient();
+  // na criação, o id pode vir do aparelho (mesmo id usado pela fila offline)
+  const novoId = campo("novo_id");
+  const nova: GlucoseInsert = isUuid(novoId) ? { ...parsed.row, id: novoId } : parsed.row;
   const { data, error } = id
-    ? await supabase.from("glucose_readings").update(row).eq("id", id).select("id")
-    : await supabase.from("glucose_readings").insert(row).select("id");
+    ? await supabase.from("glucose_readings").update(parsed.row).eq("id", id).select("id")
+    : await supabase
+        .from("glucose_readings")
+        .insert(nova)
+        .select("id");
 
   if (error || !data?.length) {
     return { error: "Não foi possível salvar. Verifique sua conexão e tente de novo." };
@@ -65,5 +40,5 @@ export async function saveReading(
 
   revalidatePath("/", "layout");
   if (id) redirect("/historico?salvo=1");
-  return { saved: { valor, contexto } };
+  return { saved: { valor: parsed.row.valor_mg_dl, contexto: parsed.row.contexto } };
 }

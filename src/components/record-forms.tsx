@@ -9,6 +9,8 @@ import {
   type SaveRecordState,
 } from "@/app/(app)/registros-actions";
 import { FormMessage } from "@/components/form-ui";
+import { useFilaOffline } from "@/components/offline-provider";
+import { criarOuEnfileirar, editarComRede } from "@/lib/offline/salvar";
 import { SubmitButton } from "@/components/submit-button";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { toLocalInput } from "@/lib/format";
@@ -18,6 +20,9 @@ import {
   DURACAO_MAX,
   DURACAO_MIN,
   TIPO_ATIVIDADE_MAX,
+  formatDuracao,
+  formatPeso,
+  type TipoRegistro,
 } from "@/lib/records";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +33,17 @@ export const choiceClass =
   "flex min-h-14 cursor-pointer items-center justify-center rounded-lg border-2 px-3 text-center text-base font-medium transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:hover:bg-primary/90 has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50";
 
 type Action = (state: SaveRecordState, formData: FormData) => Promise<SaveRecordState>;
+type TipoComplementar = Exclude<TipoRegistro, "glicemia">;
+
+/** Resumo mostrado quando o registro fica guardado no aparelho (sem internet). */
+function resumoOffline(tipo: TipoComplementar, row: Record<string, unknown>): string {
+  const inicio = {
+    refeicao: `Refeição: ${row.descricao}`,
+    atividade: `Atividade: ${row.tipo}, ${formatDuracao(Number(row.duracao_min))}`,
+    peso: `Peso: ${formatPeso(Number(row.peso_kg))}`,
+  }[tipo];
+  return `${inicio}. Guardado neste aparelho: será enviado sozinho quando a internet voltar.`;
+}
 
 /**
  * Estrutura comum: envia o formulário, mostra erro, e depois de uma criação
@@ -35,12 +51,14 @@ type Action = (state: SaveRecordState, formData: FormData) => Promise<SaveRecord
  */
 function RecordForm({
   action,
+  tipo,
   id,
   quando,
   quandoLabel,
   children,
 }: {
   action: Action;
+  tipo: TipoComplementar;
   id?: string;
   quando?: string;
   quandoLabel: string;
@@ -51,6 +69,7 @@ function RecordForm({
     <RecordFormInner
       key={round}
       action={action}
+      tipo={tipo}
       id={id}
       // a partir do 2º registro, a hora padrão é a do momento em que o formulário reabre
       quando={round === 0 && quando ? quando : toLocalInput(new Date())}
@@ -64,6 +83,7 @@ function RecordForm({
 
 function RecordFormInner({
   action,
+  tipo,
   id,
   quando,
   quandoLabel,
@@ -71,13 +91,26 @@ function RecordFormInner({
   children,
 }: {
   action: Action;
+  tipo: TipoComplementar;
   id?: string;
   quando: string;
   quandoLabel: string;
   onNew: () => void;
   children: React.ReactNode;
 }) {
-  const [state, formAction, pending] = useActionState(action, undefined);
+  const { userId } = useFilaOffline();
+  const [state, formAction, pending] = useActionState(
+    (prev: SaveRecordState, formData: FormData): Promise<SaveRecordState> =>
+      id
+        ? editarComRede(action, prev, formData, (error) => ({ error }))
+        : criarOuEnfileirar(action, prev, formData, {
+            userId,
+            tipo,
+            erro: (error) => ({ error }),
+            aoEnfileirar: (row) => ({ saved: resumoOffline(tipo, row), offline: true }),
+          }),
+    undefined,
+  );
 
   if (state?.saved) {
     return (
@@ -122,7 +155,7 @@ function RecordFormInner({
 
 export function MealForm({ meal }: { meal?: { id: string; descricao: string; quando: string } }) {
   return (
-    <RecordForm action={saveMeal} id={meal?.id} quando={meal?.quando} quandoLabel="Quando comeu">
+    <RecordForm action={saveMeal} tipo="refeicao" id={meal?.id} quando={meal?.quando} quandoLabel="Quando comeu">
       <div className="flex flex-col gap-2">
         <label htmlFor="descricao" className="text-base font-medium">
           O que você comeu?
@@ -152,7 +185,7 @@ export function ActivityForm({
   const [escolha, setEscolha] = useState(activity ? (comum ? activity.tipo : "outra") : "");
 
   return (
-    <RecordForm action={saveActivity} id={activity?.id} quando={activity?.quando} quandoLabel="Quando começou">
+    <RecordForm action={saveActivity} tipo="atividade" id={activity?.id} quando={activity?.quando} quandoLabel="Quando começou">
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-base font-medium">Atividade</legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -217,7 +250,7 @@ export function ActivityForm({
 
 export function WeightForm({ weight }: { weight?: { id: string; pesoKg: string; quando: string } }) {
   return (
-    <RecordForm action={saveWeight} id={weight?.id} quando={weight?.quando} quandoLabel="Data e hora">
+    <RecordForm action={saveWeight} tipo="peso" id={weight?.id} quando={weight?.quando} quandoLabel="Data e hora">
       <div className="flex flex-col gap-2">
         <label htmlFor="peso_kg" className="text-base font-medium">
           Peso
