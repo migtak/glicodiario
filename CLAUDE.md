@@ -8,7 +8,7 @@ PWA responsivo para acompanhar glicemia (pré-diabetes/curiosidade, uso pessoal)
 A pessoa dona do projeto **não é desenvolvedora**. Explique em linguagem simples e dê instruções passo a passo (onde clicar, o que copiar) sempre que ela precisar agir, por exemplo no Supabase, no GitHub ou na Vercel. Trabalhe uma fase por vez e pare ao fim de cada uma para ela testar.
 
 ## Stack
-Next.js 16 (App Router, `src/`), TypeScript, Tailwind 4, shadcn/ui (estilo base-nova, sobre `@base-ui/react`), lucide-react, Supabase (Auth + Postgres + RLS). Ainda por vir: Recharts, Dexie + Serwist (offline/PWA), Vitest e Playwright.
+Next.js 16 (App Router, `src/`), TypeScript, Tailwind 4, shadcn/ui (estilo base-nova, sobre `@base-ui/react`), lucide-react, Supabase (Auth + Postgres + RLS), Vitest e Playwright. Gráficos em SVG próprio, sem biblioteca. Ainda por vir: Dexie + Serwist (offline/PWA).
 
 ## Comandos
 - `npm run dev`: servidor local em http://localhost:3000
@@ -51,3 +51,10 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - Uma glicemia `pos_1h`/`pos_2h` pode ter `meal_id`. A refeição das últimas 4h vem sugerida.
 - Histórico: `TimelineByDay` (`src/components/reading-list.tsx`) mistura todos os tipos, e `?tipo=` filtra.
 - Testes E2E: funções compartilhadas em `e2e/helpers.ts`. Todo teste apaga o que cria.
+
+## Gráficos e resumo
+- Cálculos puros e testados: `src/lib/stats.ts` (resumo de glicemia, peso e atividade) e `src/lib/chart.ts` (marcações dos eixos).
+- `TimeChart` (`src/components/time-chart.tsx`) é o gráfico SVG genérico no tempo: uma única escala vertical, faixa sombreada opcional, fileira de refeições e atividades, e detalhes ao tocar ou passar o mouse. Os textos dos detalhes vêm prontos do servidor.
+- Cores dos pontos: `TOM_CLASSES[tom].fill`. Texto nunca usa a cor da série.
+- Página: `src/app/(app)/graficos/page.tsx` (`?periodo=7|30|90`, `?contexto=` filtra só o gráfico). Filtros em pílula: `src/components/chips.tsx`.
+- Vitest resolve o atalho `@/` pelo `vitest.config.mts`.

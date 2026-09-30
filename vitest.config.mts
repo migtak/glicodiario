@@ -1,6 +1,11 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  resolve: {
+    // mesmo atalho do tsconfig: "@/lib/..." → "src/lib/..."
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+  },
   test: {
     exclude: ["e2e/**", "node_modules/**"],
     include: ["src/**/*.test.ts"],
