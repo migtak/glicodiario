@@ -35,7 +35,8 @@ test("PWA: instalável, abre sem internet e apaga o que guardou ao sair", async 
   await page.getByLabel("E-mail").fill(process.env.E2E_EMAIL!);
   await page.getByLabel("Senha").fill(process.env.E2E_PASSWORD!);
   await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page).toHaveURL(/\/inicio$/);
+  // no site publicado, o primeiro acesso pode demorar (servidor "acordando")
+  await expect(page).toHaveURL(/\/inicio$/, { timeout: 30_000 });
   await esperarServiceWorker(page);
   // visita com internet: fica guardada no aparelho
   await page.goto("/registrar");

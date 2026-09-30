@@ -92,3 +92,10 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - **Instalação exige HTTPS** (ou localhost). No Wi-Fi local por `http://192.168…` o celular não instala nem usa o service worker. A fila funciona, com um UUID alternativo.
 - **"Sair"** usa `signOut({ scope: "local" })`: só este aparelho. O padrão da biblioteca encerraria a conta em todos os aparelhos.
 - **Testes E2E que clicam em "Sair"** devem usar sessão própria (`storageState` vazio + login na tela): a sessão do setup é compartilhada.
+
+## Publicação
+- Produção: **https://glicodiario.vercel.app** (Vercel, plano Hobby). O código fica em https://github.com/migtak/glicodiario (público).
+- **Todo `git push` na `main` publica sozinho.** Confira pelo status do commit: `gh api repos/migtak/glicodiario/commits/main/status`.
+- Variáveis na Vercel: só `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (nunca as de teste E2E).
+- Testar o site publicado: `PWA_URL=https://glicodiario.vercel.app npm run e2e:pwa`. O primeiro acesso pode demorar, porque o servidor "acorda".
+- E-mails: por decisão da pessoa, continua o e-mail embutido do Supabase (limite de cerca de 2 por hora). Se o uso crescer, configurar SMTP próprio (Brevo ou Resend).
