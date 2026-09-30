@@ -6,12 +6,3 @@ export function PageHeader({ title, subtitle }: { title: string; subtitle?: stri
     </header>
   );
 }
-
-export function ComingSoon({ phase, children }: { phase: number; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-dashed p-6 text-base text-muted-foreground">
-      <p>{children}</p>
-      <p className="mt-2 text-sm">Em construção (fase {phase} do plano).</p>
-    </div>
-  );
-}

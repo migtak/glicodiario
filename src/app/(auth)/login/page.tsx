@@ -3,8 +3,9 @@ import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Entrar" };
 
-const NOTICES: Record<string, string> = {
-  link: "Não foi possível abrir o link: ele pode ter expirado ou sido aberto em outro navegador. Se você acabou de confirmar seu e-mail, é só entrar com sua senha.",
+const NOTICES: Record<string, { texto: string; tipo: "error" | "success" }> = {
+  "conta-excluida": { texto: "Sua conta e todos os seus dados foram excluídos.", tipo: "success" },
+  link: { tipo: "error", texto: "Não foi possível abrir o link: ele pode ter expirado ou sido aberto em outro navegador. Se você acabou de confirmar seu e-mail, é só entrar com sua senha." },
 };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {

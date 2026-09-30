@@ -58,3 +58,8 @@ A rede usa um certificado próprio. O Node só acessa a internet com `--use-syst
 - Cores dos pontos: `TOM_CLASSES[tom].fill`. Texto nunca usa a cor da série.
 - Página: `src/app/(app)/graficos/page.tsx` (`?periodo=7|30|90`, `?contexto=` filtra só o gráfico). Filtros em pílula: `src/components/chips.tsx`.
 - Vitest resolve o atalho `@/` pelo `vitest.config.mts`.
+
+## Ajustes (configurações)
+- Ações em `src/app/(app)/configuracoes/actions.ts`. `saveRanges` guarda em `target_ranges` só os momentos diferentes do padrão, e `deleteAccount` chama a função `delete_my_account()` do banco depois da confirmação digitada "EXCLUIR".
+- Editor de faixas: `src/components/ranges-form.tsx`. Exportação: `GET /configuracoes/exportar`, que gera o CSV com `src/lib/csv.ts` (separador `;`, vírgula decimal, BOM UTF-8, proteção contra fórmulas).
+- Testes E2E que mudam faixas as restauram no `afterEach`, porque a conta de teste é compartilhada. A exclusão de conta **não** é testada de ponta a ponta, para não apagar a conta de teste.

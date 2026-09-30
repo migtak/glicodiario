@@ -6,12 +6,12 @@ import { login } from "../actions";
 import { Field, FormMessage } from "@/components/form-ui";
 import { SubmitButton } from "@/components/submit-button";
 
-export function LoginForm({ notice }: { notice?: string }) {
+export function LoginForm({ notice }: { notice?: { texto: string; tipo: "error" | "success" } }) {
   const [state, action, pending] = useActionState(login, undefined);
 
   return (
     <form action={action} className="flex flex-col gap-5">
-      {notice && !state && <FormMessage error={notice} />}
+      {notice && !state && <FormMessage {...{ [notice.tipo]: notice.texto }} />}
       <Field label="E-mail" name="email" type="email" autoComplete="email" required />
       <Field label="Senha" name="senha" type="password" autoComplete="current-password" required />
       <FormMessage error={state?.error} />
